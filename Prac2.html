@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <h1> Practica 2 - Fundamentos de Tecnología de Videojuegos</h1>
+    <h2> El juego de la vida</h2>
+    <h2> Lucas Rubio Lezana 2º GDDV - Quintana</h2>
+</head>
+
+<body>
+
+    <!-- ORGANIZACIÓN DE LA "INTERFAZ"-->
+
+    <!--Lienzo de dibujo-->
+    <canvas id = "canvas" width="600" height = "600" style = "border:2px solid #000"></canvas>
+
+    <!--El ususario introduce el numero de filas y columnas de la matriz-->
+    <p>Introduzca el tamaño del mapa: </p>
+    <input type="number" id="N">
+
+    <!--Paso de la Simulación en la que se encuentra -->
+    <p id = "p1"></p>
+    
+    <!--Muestra cuantos pasos lleva viva la celula -->
+    <p id = "p2"></p>
+    
+    <!--Botones-->
+    <button id = "jugar"> JUGAR </button>
+    <button id = "detener"> DETENER </button>
+    
+    <script>
+        window.onload = function() {
+            var canvas = document.getElementById("canvas");
+            var context = canvas.getContext("2d");
+        }
+
+        class Mundo {
+            constructor(){
+                this._ancho = 0;
+                this._matriz = new Array(0);
+            }
+
+            get matriz(){
+                return this._matriz;
+            }
+
+            set matriz(newMatriz){
+                this._matriz = newMatriz;
+            }
+
+            get ancho(){
+                return this._ancho;
+            }
+
+            set ancho(newAncho){
+                this._ancho = newAncho;
+            }
+
+            pintarTablero(N){
+                var nuevaMatriz = new Array(N);
+                for (var i = 0; i < 10; i++) {
+                    nuevaMatriz[i] = new Array(N);
+                }
+
+                this._ancho = N;
+                this._matriz = nuevaMatriz;
+
+            }
+        }
+
+        class Celula {
+            // Cada celula tiene dos estados posibles, viva (1 = true) o muerta (0 = false)
+
+            constructor(){
+                this._estado = false; 
+                this._tiempo = 0.0;
+                /*this._celulasVecinas = [
+                    new Celula(), //esquina superior izquierda
+                    new Celula(), //medio superior
+                    new Celula(), //esquina superior derecha
+                    new Celula(), //lateral derecho
+                    new Celula(), //esquina inferior derecha
+                    new Celula(), //medio inferior
+                    new Celula(), //esquina inferior izquierda
+                    new Celula(), //lateral izquierdo
+                ]*/
+            }
+
+            get estado(){
+                return this._estado;
+            }
+
+            set estado(newEstado){
+                this.estado = newEstado;
+            }
+
+            get tiempo(){
+                return this._tiempo;
+            }
+
+            set tiempo(newTiempo){
+                this.tiempo = newTiempo;
+            }
+        }
+        
+    </script>
+</body>
+
+</html>
