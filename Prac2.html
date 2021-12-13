@@ -13,58 +13,48 @@
     <!-- ORGANIZACIÓN DE LA "INTERFAZ"-->
 
     <!--Lienzo de dibujo-->
-    <canvas id = "canvas" width="600" height = "600" style = "border:2px solid #000"></canvas>
+    <canvas id="canvas" width="600" height="600" style="border:2px solid #000"></canvas>
 
     <!--El ususario introduce el numero de filas y columnas de la matriz-->
     <p>Introduzca el tamaño del mapa: </p>
     <input type="number" id="N">
 
     <!--Paso de la Simulación en la que se encuentra -->
-    <p id = "p1"></p>
-    
-    <!--Muestra cuantos pasos lleva viva la celula -->
-    <p id = "p2"></p>
-    
-    <!--Botones-->
-    <button id = "jugar"> JUGAR </button>
-    <button id = "detener"> DETENER </button>
-    
-    <script>
-        window.onload = function() {
-            var canvas = document.getElementById("canvas");
-            var context = canvas.getContext("2d");
-        }
+    <p id="p1"></p>
 
+    <!--Muestra cuantos pasos lleva viva la celula -->
+    <p id="p2"></p>
+
+    <!--Botones-->
+    <button id="jugar" onclick="initWorld()"> JUGAR </button>
+    <button id="detener"> DETENER </button>
+
+
+    <!-- SCRIPT -->
+    <script>
         class Mundo {
-            constructor(){
+            constructor() {
                 this._ancho = 0;
                 this._matriz = new Array(0);
             }
 
-            get matriz(){
+            get matriz() {
                 return this._matriz;
             }
 
-            set matriz(newMatriz){
+            set matriz(newMatriz) {
                 this._matriz = newMatriz;
             }
 
-            get ancho(){
+            get ancho() {
                 return this._ancho;
             }
 
-            set ancho(newAncho){
+            set ancho(newAncho) {
                 this._ancho = newAncho;
             }
 
-            pintarTablero(N){
-                var nuevaMatriz = new Array(N);
-                for (var i = 0; i < 10; i++) {
-                    nuevaMatriz[i] = new Array(N);
-                }
-
-                this._ancho = N;
-                this._matriz = nuevaMatriz;
+            pintarTablero(N) {
 
             }
         }
@@ -72,38 +62,56 @@
         class Celula {
             // Cada celula tiene dos estados posibles, viva (1 = true) o muerta (0 = false)
 
-            constructor(){
-                this._estado = false; 
+            constructor() {
+                this._estado = false;
                 this._tiempo = 0.0;
-                /*this._celulasVecinas = [
-                    new Celula(), //esquina superior izquierda
-                    new Celula(), //medio superior
-                    new Celula(), //esquina superior derecha
-                    new Celula(), //lateral derecho
-                    new Celula(), //esquina inferior derecha
-                    new Celula(), //medio inferior
-                    new Celula(), //esquina inferior izquierda
-                    new Celula(), //lateral izquierdo
-                ]*/
             }
 
-            get estado(){
+            get estado() {
                 return this._estado;
             }
 
-            set estado(newEstado){
-                this.estado = newEstado;
+            set estado(newEstado) {
+                this._estado = newEstado;
             }
 
-            get tiempo(){
+            get tiempo() {
                 return this._tiempo;
             }
 
-            set tiempo(newTiempo){
-                this.tiempo = newTiempo;
+            set tiempo(newTiempo) {
+                this._tiempo = newTiempo;
             }
         }
-        
+
+        //Obtenemos la información del canvas
+        var canvas = document.getElementById("canvas");
+        var context = canvas.getContext("2d");
+
+        var N = document.getElementById("N").value;
+
+        // Función para inicializar el mundo y crear el tablero
+        function initWorld() {
+
+            var nuevaMatriz = new Array(N).fill(null);
+            for (var i = 0; i < 10; i++) {
+                nuevaMatriz[i] = new Array(N).fill(0);
+            }
+
+            var mundo = new Mundo();
+            mundo._ancho = N;
+            mundo._matriz = nuevaMatriz;
+
+            // Dibujado de la cuadrícula
+            for (var i = 0; i < mundo._matriz.length; i++) {
+                for (var j = 0; j < mundo._matriz[i].length; j++) {
+                    context.beginPath();
+                    context.rect(i * N / 10, j * N / 10, N / 10, N / 10);
+                    context.stroke();
+                }
+            }
+        }
+
     </script>
 </body>
 
