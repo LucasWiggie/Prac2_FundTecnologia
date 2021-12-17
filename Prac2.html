@@ -88,14 +88,18 @@
         var canvas = document.getElementById("canvas");
         var context = canvas.getContext("2d");
 
-        var N = document.getElementById("N").value;
-
         // Función para inicializar el mundo y crear el tablero
         function initWorld() {
 
-            var nuevaMatriz = new Array(N).fill(null);
-            for (var i = 0; i < 10; i++) {
-                nuevaMatriz[i] = new Array(N).fill(0);
+            var N = document.getElementById("N").value;
+            var aux = N;
+
+            const nuevaMatriz = [];
+            for (var i = 0; i < N; i++) {
+                nuevaMatriz[i] = [];
+                for(var j = 0; j < N; j++){
+                    nuevaMatriz[i][j] = 0;
+                }
             }
 
             var mundo = new Mundo();
