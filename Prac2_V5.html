@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <h1> Practica 2 - Fundamentos de Tecnología de Videojuegos - 2º GDDV Quintana</h1>
+    <h2> El juego de la vida</h2>
+    <h2> Lucas Rubio Lezana DNI: 06633466J</h2>
+</head>
+
+<body>
+
+    <!-- ORGANIZACIÓN DE LA "INTERFAZ"-->
+
+    <!--Lienzo de dibujo-->
+    <canvas id="canvas" width='700' height='700' style="border:2px solid #000"></canvas>
+
+    <!--El ususario introduce el numero de filas y columnas de la matriz-->
+    <p>Introduzca el tamaño del mapa: </p>
+    <input type="number" id="N">
+
+    <!--Paso de la Simulación en la que se encuentra -->
+    <p id="p1"></p>
+
+    <!--Muestra cuantos pasos lleva viva la celula -->
+    <p id="p2"></p>
+
+    <!--Botones-->
+    <button id="dibujar" onclick="draw()"> DIBUJAR </button>
+    <button id="jugar" onclick="play()"> JUGAR </button>
+    <button id="detener" onclick="stop()"> DETENER </button>
+
+
+    <!-- SCRIPT -->
+    <script>
+        class World {
+            constructor() {
+                this._width = 0;
+                this._matrix = [];
+                this._squareSize = 0;
+            }
+
+            get matrix() {
+                return this._matrix;
+            }
+
+            get width() {
+                return this._width;
+            }
+
+            get squareSize() {
+                return this._squareSize;
+            }
+
+            set matrix(newMatrix) {
+                this._matrix = newMatrix;
+            }
+
+            set width(newWidth) {
+                this._width = newWidth;
+            }
+
+            set squareSize(newSize) {
+                this._squareSize = newSize;
+            }
+
+            drawGrid(N) { // Función para cuando dibujamos la cuadrícula por primera vez
+                /* 
+                El canvas tiene un tamaño fijo (680*680), mientras que la anchura de cada cuadrado de la cuadrícula se calcula dividiendo 680/N,
+                siendo N el numero de cuadrículas que ha introducido el usuario
+                */
+                // Creamos la matriz cuadrada de tamaño N y se la asignamos como atributo a world, además de también establecer su anchura
+                var matrix = createCellMatrix(N);
+                this._width = N;
+                this._matrix = matrix;
+                this._squareSize = 700 / N;
+
+                //Dibuja la cuadricula
+                for (var i = 0; i < N; i++) {
+                    for (var j = 0; j < N; j++) {
+                        context.beginPath();
+                        context.rect(i * this._squareSize, j * this._squareSize, this._squareSize, this._squareSize);
+                        // context.fillStyle = 'white';
+                        // context.fillRect(i * squareSize, j * squareSize, squareSize, squareSize);
+                        context.stroke();
+                    }
+                }
+            }
+
+            redrawGrid() { // Función para redibujar la cuadrícula on update
+                //Dibuja la cuadricula
+                for (var i = 0; i < this._width; i++) {
+                    for (var j = 0; j < this._width; j++) {
+                        context.beginPath();
+                        context.rect(i * this._squareSize, j * this._squareSize, this._squareSize, this._squareSize);
+                        // context.fillStyle = 'white';
+                        // context.fillRect(i * squareSize, j * squareSize, squareSize, squareSize);
+                        context.stroke();
+                    }
+                }
+            }
+
+        }
+
+        class Cell {
+            // Cada celula tiene dos estados posibles, viva (1 = true) o muerta (0 = false)
+            constructor() {
+                this._state = false;
+                this._time = 0;
+            }
+
+            get state() {
+                return this._state;
+            }
+
+            set state(newState) {
+                this._state = newState;
+            }
+
+            get time() {
+                return this._time;
+            }
+
+            set time(newTime) {
+                this._time = newTime;
+            }
+        }
+
+        //  VARIABLES
+        //Canvas
+        var canvas = document.getElementById("canvas"); //vinculamos la variable canvas con el canvas en el HTML mediante el id
+        var context = canvas.getContext("2d"); //obtenemos el contexto del canvas
+        canvas.addEventListener("mousedown", cellClick); //añadimos un eventListener para cuando se haga click con el raton en el canvas
+        canvas.addEventListener("mouseover", showCellState); //añadimos un eventListener para cuando se pase con el cursor sobre una célula
+
+        //Párrafos
+        var p1 = document.getElementById("p1");
+        var p2 = document.getElementById("p2");
+
+        //Mundo
+        /*
+        Creamos un mundo, aunque de momento estará vacío
+        Cuando se sepa el tamaño del tablero (N), world llamara a su metodo draw y dentro de este
+        se creará la matriz de world.
+        */
+        var world = new World();
+
+        //Temporizador
+        var timer;
+        var stepCount = 0;
+
+
+        // FUNCIONES AUXILIARES
+        //Función para crear una matriz cuadrada de células dado su tamaño
+        function createCellMatrix(N) {
+            var newMatrix = [];
+            for (var i = 0; i < N; i++) {
+                newMatrix[i] = [];
+                for (var j = 0; j < N; j++) {
+                    newMatrix[i][j] = new Cell();
+                }
+            }
+            return newMatrix;
+        }
+
+        //Función para copiar los estados de una matriz a otra
+        function copyMatrix(matrixToCopy){
+            var copiedMatrix = [];
+            for (var i = 0; i < world._width; i++) {
+                copiedMatrix[i] = [];
+                for (var j = 0; j < world._width; j++) {
+                    copiedMatrix[i][j] = matrixToCopy[i][j]._state;
+                }
+            }
+            return copiedMatrix;
+        }
+
+        // Función que obtiene la coordenada X del ratón en sistema de coordenadas del canvas
+        function getMousePosX(canvas, event) {
+            var rect = canvas.getBoundingClientRect();
+            var x = event.clientX - rect.left;
+            return x;
+        }
+
+        // Función que obtiene la coordenada Y del ratón en sistema de coordenadas del canvas
+        function getMousePosY(canvas, event) {
+            var rect = canvas.getBoundingClientRect();
+            var y = event.clientY - rect.top;
+            return y;
+        }
+
+        // Función que pasa de coordenadas del canvas al número de casilla que le corresponde a dichas coordenadas
+        function getColumnRow(mouseCoord) {
+            /*
+            El canvas está dividido en N cuadrados de sqSize de anchura. Dada una coordenada del ratón (puede ser la x o la y), comprobaremos si es menor que sqSize. 
+            Si lo es, es que está en la primera casilla, si no, continuamos el bucle pero la siguiente iteración comprobando si la coordenada es menor que sqSize*count 
+            (la variable count empieza en 1 e irá incrementando). De esta manera, encontraremos cual es la columna o fila de la coordenada que se ha pasado por parámetro.            
+            */
+            var stop = false;
+            var count = 1;
+            do {
+                if (mouseCoord < world.squareSize * count) {
+                    stop = true;
+                } else {
+                    count++;
+                }
+            } while (stop == false);
+
+            var pos = count - 1;
+            return pos;
+        }
+
+        // Función para rellenar uno de los cuadrados de la cuadrícula al hacer click 
+        function cellClick(event) {
+            // Obtenemos las coordenadas X e Y del ratón en sistema de coordenadas del canvas
+            var clickX = getMousePosX(canvas, event);
+            var clickY = getMousePosY(canvas, event);
+            // Hallamos a qué célula pertenecen esas coordenadas
+            var column = getColumnRow(clickX);
+            var row = getColumnRow(clickY);
+
+            if ((world._matrix[column][row])._state == true) { //si la célula en la que hacemos click estaba viva
+                // Pasa a estar muerta
+                emptyCell(column, row);
+                (world._matrix[column][row])._time = 0;
+            } else { // si la célula estaba muerta
+                // Pasa a estar viva
+                fillCell(column, row);
+            }
+        }
+
+        // Función para rellenar uno de los cuadrados dada su posición (columna y fila)
+        function fillCell(col, row) {
+            context.fillStyle = 'black';
+            context.fillRect(world._squareSize * col, world._squareSize * row, world._squareSize, world._squareSize);
+            world._matrix[col][row]._state = true;
+            world.redrawGrid();
+        }
+
+        // Función para vaciar un cuadrado
+        function emptyCell(col, row) {
+            context.fillStyle = 'white';
+            context.fillRect(world._squareSize * col, world._squareSize * row, world._squareSize, world._squareSize);
+            world._matrix[col][row]._state = false;
+            world.redrawGrid();
+        }
+
+        // Función para commprobar el estado de las células vecinas a una dada
+        function checkNeighbours(mat, col, row) {
+            var count = 0; // contador de las células vecinas que están vivas
+            // Recorremos las células vecinas de la célula[col][row] y contamos cuántas están vivas
+            for (var i = -1; i < 2; i++) {
+                for (var j = -1; j < 2; j++) {
+                    // Utilizando %, convertimos el tablero en infinito ya que si evaluamos una célula del borde, analizará las que están al otro lado del tablero
+                    var colToCheck = (col + i + world._width) % world._width;
+                    var rowToCheck = (row + j + world._width) % world._width;
+                    if (colToCheck == col && rowToCheck == row) { //para no contar la propia célula que se está evaluando
+                        count = count; // No se hace nada
+                    } else {
+                        if (mat[colToCheck][rowToCheck] == true) { // Si la célula vecina está viva, la contamos
+                            count++;
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
+        // Función que se ejecuta cada paso, actualizando el estado de las células
+        function update() {
+            stepCount++;
+            p1.innerHTML = "Simulación en funcionamiento - Paso " + stepCount;
+
+            world.redrawGrid();
+
+            /*
+            Copiamos los estados de las células de la matriz mundo a la matriz copiedMatrix. Las comparaciones de qué células están vivas se harán comparando
+            con copiedMatrix, mientras que las actualizaciones se harán en la matriz de world. De esta manera, si actualizamos una célula, y por ejemplo, 
+            pasando a estar viva, al evaluar la de al lado, compararemos con el estado anterior a la actualización, es decir, compararemos con la célula cuando estaba muerta.
+
+            De esta forma, se actualiza de manera correcta la matriz entre paso y paso de la simulación.
+            */
+            var copiedMatrix = copyMatrix(world._matrix);
+
+            // Recorremos la matriz
+            for (var c = 0; c < world._width; c++) {
+                for (var r = 0; r < world._width; r++) {
+                    if (copiedMatrix[c][r] == false) { //si la célula está muerta
+                        /*
+                        Una célula muerta con exactamente 3 células vecinas vivas nace. Al iguiente turno estará viva, 
+                        por lo que actualizamos la matriz de world
+                        */
+                        var numAliveNeighbours = checkNeighbours(copiedMatrix, c, r);
+                        if (numAliveNeighbours == 3) {
+                            // Pasa a estar viva
+                            fillCell(c, r);
+                        }
+                    } else { //si la célula está viva
+                        /*
+                        Una célula viva con 2 ó 3 células vecinas vivas sigue viva. En otro caso muere o permanece muerta
+                        */
+                        world._matrix[c][r]._time++;
+                        var numAliveNeighbours = checkNeighbours(copiedMatrix, c, r);
+                        if (numAliveNeighbours != 2 && numAliveNeighbours != 3) {
+                            // Pasa a estar muerta
+                            world._matrix[c][r]._time = 0;
+                            emptyCell(c, r);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Función para mostrar el estado de la célula sobrela que está el cursor
+        function showCellState(event) {
+            // Obtenemos las coordenadas X e Y del ratón en sistema de coordenadas del canvas
+            var mouseX = getMousePosX(canvas, event);
+            var mouseY = getMousePosY(canvas, event);
+
+            // Hallamos a qué célula pertenecen esas coordenadas
+            var column = getColumnRow(mouseX, world._squareSize);
+            var row = getColumnRow(mouseY, world._squareSize);
+
+            p2.innerHTML = "La célula [ " + column + ", " + row + "] lleva viva " + world[column][row]._time + " pasos";
+        }
+
+        // FUNCIONES PRINCIPALES
+        function draw() {
+            // Guardamos en la variable N el valor que ha introducido el usuario en el input
+            var N = parseInt(document.getElementById("N").value);
+            // Primero, borramos lo que previamente se habia dibujado, para que no se superpongan dibujos
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujado de la cuadrícula:
+            world.drawGrid(N);
+        }
+
+        function play() {
+            // La función update realiza un paso. Con el temporizador, esta función se llama cada 100ms, por lo que en 1000ms, es decir, 1 segundo, se habrán realizado 10 pasos
+            timer = setInterval(update, 100);
+        }
+
+        function stop() {
+            clearInterval(timer);
+        }
+
+
+    </script>
+</body>
+
+</html>
